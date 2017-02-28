@@ -54,7 +54,7 @@ struct message
     message& operator=(const message&) = delete;
     message(message&&) = default;
     message& operator=(message&&) = default;
-    ~message() = default;
+    virtual ~message() = default;
 
     /** @brief Conversion constructor for 'msgp_t'.
      *
@@ -70,7 +70,7 @@ struct message
     message(msgp_t m, std::false_type) : _msg(m) {}
 
     /** @brief Release ownership of the stored msg-pointer. */
-    msgp_t release() { return _msg.release(); }
+    virtual msgp_t release() { return _msg.release(); }
 
     /** @brief Check if message contains a real pointer. (non-nullptr). */
     explicit operator bool() const { return bool(_msg); }
@@ -98,13 +98,13 @@ struct message
 
     /** @brief Get the dbus bus from the message. */
     // Forward declare.
-    auto get_bus();
+    virtual bus::bus get_bus();
 
     /** @brief Get the signature of a message.
      *
      *  @return A [weak] pointer to the signature of the message.
      */
-    const char* get_signature()
+    virtual const char* get_signature()
     {
         return sd_bus_message_get_signature(_msg.get(), true);
     }
@@ -113,7 +113,7 @@ struct message
      *
      *  @return True - if message is a method error.
      */
-    bool is_method_error()
+    virtual bool is_method_error()
     {
         return sd_bus_message_is_method_error(_msg.get(), nullptr);
     }
@@ -122,7 +122,7 @@ struct message
       *
       * @return The transaction cookie of a message.
       */
-    auto get_cookie()
+    virtual uint64_t get_cookie()
     {
         uint64_t cookie;
         sd_bus_message_get_cookie(_msg.get(), &cookie);
@@ -136,7 +136,7 @@ struct message
      *
      *  @return True - if message is a method call for interface/method.
      */
-    bool is_method_call(const char* interface, const char* method)
+    virtual bool is_method_call(const char* interface, const char* method)
     {
         return sd_bus_message_is_method_call(_msg.get(), interface, method);
     }
@@ -146,7 +146,7 @@ struct message
      *  @param[in] interface - The interface to match.
      *  @param[in] member - The member to match.
      */
-    bool is_signal(const char* interface, const char* member)
+    virtual bool is_signal(const char* interface, const char* member)
     {
         return sd_bus_message_is_signal(_msg.get(), interface, member);
     }
@@ -155,7 +155,7 @@ struct message
      *
      *  @return method-return message.
      */
-    message new_method_return()
+    virtual message new_method_return()
     {
         msgp_t reply = nullptr;
         sd_bus_message_new_method_return(this->get(), &reply);
@@ -164,14 +164,14 @@ struct message
     }
 
     /** @brief Perform a 'method-return' response call. */
-    void method_return()
+    virtual void method_return()
     {
         auto b = sd_bus_message_get_bus(this->get());
         sd_bus_send(b, this->get(), nullptr);
     }
 
     /** @brief Perform a 'signal-send' call. */
-    void signal_send() { method_return(); }
+    virtual void signal_send() { method_return(); }
 
     friend struct sdbusplus::bus::bus;
 

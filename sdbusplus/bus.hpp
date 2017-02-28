@@ -63,7 +63,7 @@ struct bus
     bus& operator=(const bus&) = delete;
     bus(bus&&) = default;
     bus& operator=(bus&&) = default;
-    ~bus() = default;
+    virtual ~bus() = default;
 
     /** @brief Conversion constructor from 'busp_t'.
      *
@@ -72,19 +72,19 @@ struct bus
     explicit bus(busp_t b);
 
     /** @brief Release ownership of the stored bus-pointer. */
-    busp_t release() { return _bus.release(); }
+    virtual busp_t release() { return _bus.release(); }
 
     /** @brief Wait for new dbus messages or signals.
      *
      *  @param[in] timeout_us - Timeout in usec.
      */
-    void wait(uint64_t timeout_us = ULLONG_MAX)
+    virtual void wait(uint64_t timeout_us = ULLONG_MAX)
     {
         sd_bus_wait(_bus.get(), timeout_us);
     }
 
     /** @brief Process waiting dbus messages or signals. */
-    auto process()
+    virtual message::message process()
     {
         sd_bus_message* m = nullptr;
         sd_bus_process(_bus.get(), &m);
@@ -94,7 +94,7 @@ struct bus
 
     /** @brief Process waiting dbus messages or signals, discarding unhandled.
      */
-    void process_discard()
+    virtual void process_discard()
     {
         sd_bus_process(_bus.get(), nullptr);
     }
@@ -103,7 +103,7 @@ struct bus
      *
      *  @param[in] service - The service name to claim.
      */
-    void request_name(const char* service)
+    virtual void request_name(const char* service)
     {
         sd_bus_request_name(_bus.get(), service, 0);
     }
@@ -117,8 +117,8 @@ struct bus
      *
      *  @return A newly constructed message.
      */
-    auto new_method_call(const char* service, const char* objpath,
-                         const char* interf, const char* method)
+    virtual message::message new_method_call(const char* service, const char* objpath,
+                                             const char* interf, const char* method)
     {
         sd_bus_message* m = nullptr;
         sd_bus_message_new_method_call(_bus.get(), &m, service, objpath,
@@ -135,7 +135,7 @@ struct bus
      *
      *  @return A newly constructed message.
      */
-    auto new_signal(const char* objpath, const char* interf, const char* member)
+    virtual message::message new_signal(const char* objpath, const char* interf, const char* member)
     {
         sd_bus_message* m = nullptr;
         sd_bus_message_new_signal(_bus.get(), &m, objpath, interf, member);
@@ -150,7 +150,7 @@ struct bus
      *
      *  @return The response message.
      */
-    auto call(message::message& m, uint64_t timeout_us = 0)
+    virtual message::message call(message::message& m, uint64_t timeout_us = 0)
     {
         sd_bus_message* reply = nullptr;
         sd_bus_call(_bus.get(), m.get(), timeout_us, nullptr, &reply);
@@ -163,7 +163,7 @@ struct bus
      *  @param[in] m - The method_call message.
      *  @param[in] timeout_us - The timeout for the method call.
      */
-    void call_noreply(message::message& m, uint64_t timeout_us = 0)
+    virtual void call_noreply(message::message& m, uint64_t timeout_us = 0)
     {
         sd_bus_call(_bus.get(), m.get(), timeout_us, nullptr, nullptr);
     }
@@ -172,7 +172,7 @@ struct bus
       *
       * @return The bus unique name.
       */
-    auto get_unique_name()
+    virtual std::string get_unique_name()
     {
         const char* unique = nullptr;
         sd_bus_get_unique_name(_bus.get(), &unique);
@@ -184,19 +184,19 @@ struct bus
      *  @param[in] event - sd_event object.
      *  @param[in] priority - priority of bus event source.
      */
-    void attach_event(sd_event* event, int priority)
+    virtual void attach_event(sd_event* event, int priority)
     {
         sd_bus_attach_event(_bus.get(), event, priority);
     }
 
     /** @brief Detach the bus from its sd-event event loop object */
-    void detach_event()
+    virtual void detach_event()
     {
         sd_bus_detach_event(_bus.get());
     }
 
     /** @brief Get the sd-event event loop object of the bus */
-    auto get_event()
+    virtual sd_event* get_event()
     {
         return sd_bus_get_event(_bus.get());
     }
@@ -209,7 +209,7 @@ struct bus
      *
      *  @param[in] path - The path to forward to sd_bus_emit_object_added
      */
-    void emit_object_added(const char* path)
+    virtual void emit_object_added(const char* path)
     {
         sd_bus_emit_object_added(_bus.get(), path);
     }
@@ -222,7 +222,7 @@ struct bus
      *
      *  @param[in] path - The path to forward to sd_bus_emit_object_removed
      */
-    void emit_object_removed(const char* path)
+    virtual void emit_object_removed(const char* path)
     {
         sd_bus_emit_object_removed(_bus.get(), path);
     }
@@ -280,7 +280,7 @@ inline bus new_system()
  *
  *  @return The dbus bus.
  */
-inline auto message::message::get_bus()
+inline bus::bus message::message::get_bus()
 {
     sd_bus* b = nullptr;
     b = sd_bus_message_get_bus(_msg.get());

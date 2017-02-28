@@ -53,6 +53,9 @@ phosphor-timemanager
 sdbusplus.pc
 tools/build
 tools/setup.py
+.libs
+*.la
+*.lo
 
 # UT related items
 .dirstamp
