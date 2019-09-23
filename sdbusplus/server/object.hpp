@@ -3,6 +3,8 @@
 #include <sdbusplus/bus.hpp>
 #include <sdbusplus/sdbus.hpp>
 
+#include <tuple>
+
 namespace sdbusplus
 {
 
@@ -73,6 +75,9 @@ struct compose<>
 template <class... Args>
 struct object : details::compose<Args...>
 {
+    /** The tuple to hold the interfaces */
+    std::tuple<Args...> interfaces;
+
     /* Define all of the basic class operations:
      *     Not allowed:
      *         - Default constructor to avoid nullptrs.
@@ -109,7 +114,7 @@ struct object : details::compose<Args...>
         __sdbusplus_server_object_path(path),
         __sdbusplus_server_object_emitremoved(false),
         __sdbusplus_server_object_intf(bus.getInterface()),
-        __action(EMIT_OBJECT_ADDED)
+        __action(action::EMIT_OBJECT_ADDED)
     {
         // Default ctor
         check_action();
@@ -120,7 +125,7 @@ struct object : details::compose<Args...>
     {
         if (deferSignal)
         {
-            __action = DEFER_EMIT;
+            __action = action::DEFER_EMIT;
         }
         check_action();
     }
@@ -133,14 +138,16 @@ struct object : details::compose<Args...>
 
     void check_action()
     {
-        if (__action == EMIT_OBJECT_ADDED)
+        if (__action == action::EMIT_OBJECT_ADDED)
         {
             emit_object_added();
         }
-        else if (__action == EMIT_INTERFACE_ADDED)
+        else if (__action == action::EMIT_INTERFACE_ADDED)
         {
-            // TODO: for each details::compose<Arg>,
-            //       call Args's emit_added() function
+            std::apply([&](auto&&... args) {
+                (static_cast<decltype(args)>(*this).emit_added(), ...);
+                },
+                interfaces);
         }
         // Otherwise, do nothing
     }

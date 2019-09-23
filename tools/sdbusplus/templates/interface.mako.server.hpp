@@ -121,6 +121,12 @@ ${p.camelCase}(${p.cppTypeParam(interface.name)} value);
     static ${e.name} convert${e.name}FromString(const std::string& s);
     % endfor
 
+    /** @brief Emit interface added */
+    void emit_added()
+    {
+        _${"_".join(interface.name.split('.'))}_interface.emit_added();
+    }
+
     private:
     % for m in interface.methods:
 ${ m.cpp_prototype(loader, interface=interface, ptype='callback-header') }
