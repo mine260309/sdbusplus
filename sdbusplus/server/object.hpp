@@ -103,32 +103,21 @@ struct object : details::compose<Args...>
      *                           object needs custom property init before the
      *                           signal can be sent.
      */
-    object(bus::bus& bus, const char* path) :
+    object(bus::bus& bus, const char* path, action act = action::EMIT_OBJECT_ADDED) :
         details::compose<Args...>(bus, path),
         __sdbusplus_server_object_bus(bus.get(), bus.getInterface()),
         __sdbusplus_server_object_path(path),
         __sdbusplus_server_object_emitremoved(false),
         __sdbusplus_server_object_intf(bus.getInterface()),
-        __action(action::EMIT_OBJECT_ADDED)
+        __action(act)
     {
         // Default ctor
         check_action();
     }
 
     object(bus::bus& bus, const char* path, bool deferSignal) :
-        object(bus, path)
+        object(bus, path, deferSignal ? action::DEFER_EMIT : action::EMIT_OBJECT_ADDED)
     {
-        if (deferSignal)
-        {
-            __action = action::DEFER_EMIT;
-        }
-        check_action();
-    }
-
-    object(bus::bus& bus, const char* path, action act) :
-        object(bus, path), __action(act)
-    {
-        check_action();
     }
 
     void check_action()

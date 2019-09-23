@@ -96,8 +96,8 @@ struct interface final
     /** @brief Emit the interface is added on D-Bus */
     void emit_added()
     {
-        details::Strv s{{_interf}};
-        _intf->sd_bus_emit_interfaces_added_strv(_bus.get(), _path,
+        sdbusplus::bus::details::Strv s{{_interf}};
+        _intf->sd_bus_emit_interfaces_added_strv(_bus.get(), _path.c_str(),
                                                  static_cast<char**>(s));
     }
 
