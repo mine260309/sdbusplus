@@ -127,6 +127,12 @@ ${p.camelCase}(${p.cppTypeParam(interface.name)} value);
         _${"_".join(interface.name.split('.'))}_interface.emit_added();
     }
 
+    /** @brief Emit interface removed */
+    void emit_removed()
+    {
+        _${"_".join(interface.name.split('.'))}_interface.emit_removed();
+    }
+
     private:
     % for m in interface.methods:
 ${ m.cpp_prototype(loader, interface=interface, ptype='callback-header') }

@@ -141,6 +141,10 @@ struct object : details::compose<Args...>
                 __sdbusplus_server_object_bus.get(),
                 __sdbusplus_server_object_path.c_str());
         }
+        if (__action == action::EMIT_INTERFACE_ADDED)
+        {
+            (Args::emit_removed(), ...);
+        }
     }
 
     /** Emit the 'object-added' signal, if not already sent. */
